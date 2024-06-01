@@ -1,71 +1,51 @@
 const fs = require('fs');
 const path = require('path');
 
-// Функция перехода вверх из текущего каталога
-function goUp() {
-    const currentPath = process.cwd();
-    const parentPath = path.dirname(currentPath);
-    if (parentPath !== currentPath) {
-        process.chdir(parentPath);
-        console.log(`Changed directory to ${parentPath}`);
-    } else {
-        console.log('Already at root directory');
-    }
-}
-
-// Функция перехода в указанный каталог
-function changeDirectory(directory) {
+// Функция для изменения текущего рабочего каталога
+function changeDirectory(targetDirectory) {
     try {
-        fs.accessSync(directory, fs.constants.R_OK);
-        process.chdir(directory);
-        console.log(`Changed directory to ${process.cwd()}`);
-    } catch (error) {
-        console.error('Invalid directory');
+        process.chdir(targetDirectory);
+        console.log(`Changed directory to: ${process.cwd()}`);
+    } catch (err) {
+        console.error(`Error: ${err}`);
     }
 }
 
-// Функция вывода списка файлов и папок в текущем каталоге
-function listFiles() {
-    const files = fs.readdirSync('.');
-    files.sort((a, b) => {
-        const statA = fs.statSync(a);
-        const statB = fs.statSync(b);
-        if (statA.isDirectory() && !statB.isDirectory()) {
-            return -1;
-        } else if (!statA.isDirectory() && statB.isDirectory()) {
-            return 1;
-        } else {
-            return a.localeCompare(b);
+// Функция для вывода содержимого текущего каталога
+function listDirectoryContents() {
+    fs.readdir(process.cwd(), { withFileTypes: true }, (err, files) => {
+        if (err) {
+            console.error(`Error: ${err}`);
+            return;
         }
-    });
 
-    files.forEach(file => {
-        const type = fs.statSync(file).isDirectory() ? 'directory' : 'file';
-        console.log(`${file} (${type})`);
+        const directories = [];
+        const filesList = [];
+
+        files.forEach((file) => {
+            const name = file.name;
+            const type = file.isDirectory() ? 'directory' : 'file';
+            if (file.isDirectory()) {
+                directories.push(name);
+            } else {
+                filesList.push(name);
+            }
+        });
+
+        directories.sort();
+        filesList.sort();
+
+        console.log('Directories:');
+        directories.forEach((dir) => console.log(`\t${dir}`));
+
+        console.log('Files:');
+        filesList.forEach((file) => console.log(`\t${file}`));
     });
 }
 
-// Обработчик команд пользователя
-function handleCommand(command) {
-    const parts = command.split(' ');
-    const action = parts[0];
-    const argument = parts.slice(1).join(' ');
+// Пример использования:
+// 1. Изменение каталога
+changeDirectory('path_to_directory');
 
-    switch (action) {
-        case 'up':
-            goUp();
-            break;
-        case 'cd':
-            changeDirectory(argument);
-            break;
-        case 'ls':
-            listFiles();
-            break;
-        default:
-            console.log('Invalid command');
-    }
-}
-
-// Пример использования обработчика команд
-const userInput = 'ls';
-handleCommand(userInput);
+// 2. Вывод содержимого текущего каталога
+listDirectoryContents();
